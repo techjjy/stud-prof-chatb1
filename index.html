@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Rounds with Dr. Bernd</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,650&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+  /* ============ CONFIGURATION — EDIT THIS ONE LINE ============ */
+  // Paste your Cloudflare Worker URL here (from the Worker's overview page).
+  const WORKER_URL = "https://dr-nernd-quizbot.techjjy.workers.dev";
+  /* ============================================================ */
+</script>
+<style>
+  :root {
+    --bg: #f4f1ea;
+    --paper: #fffdf8;
+    --ink: #1d2523;
+    --muted: #5c6763;
+    --line: #ddd6c8;
+    --accent: #1f5f57;
+    --accent-ink: #ffffff;
+    --accent-soft: #e2eeeb;
+    --student: #233a5e;
+    --student-ink: #ffffff;
+    --warn: #9a3b1d;
+    --warn-soft: #f7e6de;
+    --chip: #ece6da;
+    --shadow: 0 1px 2px rgba(30,30,20,.06), 0 6px 24px rgba(30,30,20,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141a19; --paper: #1b2321; --ink: #e7ebe8; --muted: #9aa7a2; --line: #2d3835;
+      --accent: #5fb3a6; --accent-ink: #0f1716; --accent-soft: #1f3330;
+      --student: #8fb0e3; --student-ink: #0f1520; --warn: #f0a07f; --warn-soft: #3a2620;
+      --chip: #25302d; --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141a19; --paper: #1b2321; --ink: #e7ebe8; --muted: #9aa7a2; --line: #2d3835;
+    --accent: #5fb3a6; --accent-ink: #0f1716; --accent-soft: #1f3330;
+    --student: #8fb0e3; --student-ink: #0f1520; --warn: #f0a07f; --warn-soft: #3a2620;
+    --chip: #25302d; --shadow: none;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    display: flex; flex-direction: column; height: 100dvh;
+    font: 15px/1.55 Inter, system-ui, -apple-system, Segoe UI, sans-serif;
+  }
+  h1, h2, h3 { font-family: "Source Serif 4", Georgia, serif; font-weight: 650; letter-spacing: -.01em; }
+
+  /* ---------- top bar ---------- */
+  header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--paper);
+  }
+  .seal {
+    width: 34px; height: 34px; border-radius: 50%; flex: none;
+    background: var(--accent); color: var(--accent-ink);
+    display: grid; place-items: center; font: 650 15px "Source Serif 4", serif;
+  }
+  header h1 { font-size: 18px; margin: 0; }
+  header .sub { color: var(--muted); font-size: 13px; }
+  header .spacer { flex: 1; }
+  .btn {
+    border: 1px solid var(--line); background: var(--paper); color: var(--ink);
+    padding: 8px 14px; border-radius: 8px; font: 500 14px Inter, sans-serif; cursor: pointer;
+  }
+  .btn:hover { border-color: var(--muted); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn.stop { color: var(--warn); border-color: var(--warn); }
+  .btn.stop:hover { background: var(--warn-soft); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .case-toggle { display: none; }
+
+  /* ---------- layout ---------- */
+  main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(300px, 400px) 1fr; }
+  aside {
+    border-right: 1px solid var(--line); overflow-y: auto; padding: 20px 22px 40px;
+    background: var(--paper);
+  }
+  aside h2 { font-size: 17px; margin: 0 0 4px; }
+  aside .note { font-size: 12px; color: var(--muted); margin: 0 0 14px; }
+  aside details { border-top: 1px solid var(--line); padding: 8px 0; }
+  aside summary { cursor: pointer; font-weight: 600; font-size: 14px; padding: 4px 0; list-style: none; }
+  aside summary::before { content: "▸ "; color: var(--muted); }
+  aside details[open] summary::before { content: "▾ "; }
+  aside ul { margin: 6px 0 4px; padding-left: 18px; font-size: 13.5px; }
+  aside li { margin: 2px 0; }
+  aside p { font-size: 13.5px; margin: 6px 0; }
+  .vitals { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 8px 0; }
+  .vitals div { background: var(--chip); border-radius: 6px; padding: 6px 8px; font-size: 12.5px; }
+  .vitals b { display: block; font-size: 14px; }
+
+  section.chat { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  #log { flex: 1; overflow-y: auto; padding: 24px clamp(16px, 4vw, 48px); }
+  .msg { display: flex; gap: 10px; margin: 0 0 18px; max-width: 820px; }
+  .msg .who { flex: none; }
+  .msg .bubble {
+    padding: 12px 16px; border-radius: 12px; background: var(--paper);
+    box-shadow: var(--shadow); border: 1px solid var(--line); min-width: 0; overflow-wrap: anywhere;
+  }
+  .msg.student { margin-left: auto; flex-direction: row-reverse; }
+  .msg.student .bubble { background: var(--student); color: var(--student-ink); border-color: transparent; white-space: pre-wrap; }
+  .msg.student .seal { background: var(--student); color: var(--student-ink); }
+  .msg.review .bubble { border-left: 4px solid var(--accent); }
+  .bubble p { margin: 0 0 8px; } .bubble p:last-child { margin-bottom: 0; }
+  .bubble ul { margin: 4px 0 8px; padding-left: 20px; }
+  .bubble li { margin: 2px 0; }
+  .bubble h2 { font-size: 17px; margin: 16px 0 6px; color: var(--accent); }
+  .bubble h2:first-child { margin-top: 0; }
+  .bubble h3 { font-size: 15px; margin: 12px 0 4px; }
+  .typing { color: var(--muted); font-style: italic; }
+  .error { background: var(--warn-soft); color: var(--warn); border-radius: 8px; padding: 10px 14px; margin: 0 0 16px; max-width: 820px; font-size: 14px; }
+
+  form#composer {
+    display: flex; gap: 10px; padding: 14px clamp(16px, 4vw, 48px) 18px;
+    border-top: 1px solid var(--line); background: var(--paper); align-items: flex-end;
+  }
+  textarea {
+    flex: 1; resize: none; min-height: 46px; max-height: 180px;
+    border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px;
+    background: var(--bg); color: var(--ink); font: inherit;
+  }
+  textarea:focus, input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .hint { font-size: 12px; color: var(--muted); padding: 0 clamp(16px, 4vw, 48px) 10px; background: var(--paper); }
+
+  /* ---------- sign-in ---------- */
+  #gate {
+    position: fixed; inset: 0; background: var(--bg); display: grid; place-items: center; padding: 16px; z-index: 10;
+  }
+  .card {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow);
+    padding: 28px; width: 100%; max-width: 420px;
+  }
+  .card h2 { margin: 12px 0 6px; font-size: 22px; }
+  .card p { color: var(--muted); margin: 0 0 18px; font-size: 14px; }
+  .card label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
+  .card input {
+    width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--ink); font: inherit;
+  }
+  .card .btn { width: 100%; margin-top: 18px; padding: 11px; }
+  #gateError { color: var(--warn); font-size: 13px; margin-top: 10px; min-height: 18px; }
+
+  @media (max-width: 820px) {
+    main { grid-template-columns: 1fr; }
+    aside { display: none; border-right: 0; border-bottom: 1px solid var(--line); max-height: 55vh; }
+    aside.open { display: block; }
+    main.case-open { grid-template-rows: auto 1fr; }
+    .case-toggle { display: inline-block; }
+    header .sub { display: none; }
+    header { padding: 10px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ======================= SIGN-IN ======================= -->
+<div id="gate">
+  <form class="card" id="gateForm" autocomplete="off">
+    <div class="seal" aria-hidden="true">B</div>
+    <h2>Case Rounds with Dr. Bernd</h2>
+    <p>An adaptive oral case quiz on a simulated pediatric patient. Read the case file, then answer Dr. Bernd's questions. Type <b>stop</b> at any time to finish and receive your review.</p>
+    <label for="nameInput">Your first name (optional)</label>
+    <input id="nameInput" maxlength="40" placeholder="e.g. Alex">
+    <label for="codeInput">Access code</label>
+    <input id="codeInput" type="password" required placeholder="Given by your instructor">
+    <button class="btn primary" type="submit" id="gateBtn">Begin rounds</button>
+    <div id="gateError" role="alert"></div>
+  </form>
+</div>
+
+<header>
+  <div class="seal" aria-hidden="true">B</div>
+  <div>
+    <h1>Case Rounds with Dr. Bernd</h1>
+    <div class="sub">Simulated patient · 5-month-old with fever and rash · For educational use only</div>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn case-toggle" id="caseToggle" type="button">Case file</button>
+  <button class="btn stop" id="stopBtn" type="button" disabled>Stop &amp; review</button>
+</header>
+
+<main id="main">
+  <!-- ======================= CASE FILE ======================= -->
+  <aside id="caseFile" aria-label="Case file">
+    <h2>Case file</h2>
+    <p class="note">Fictional patient created for clinical reasoning practice. No real individual is represented. Test results are available only by asking Dr. Bernd for them.</p>
+
+    <details open>
+      <summary>Identification &amp; chief complaint</summary>
+      <ul>
+        <li><b>Patient:</b> Baby Girl A. Reyes-Whitfield, 5 months, female</li>
+        <li><b>Ethnicity:</b> Mixed-race (maternal Filipino; paternal Irish-American)</li>
+        <li><b>Informant:</b> Biological mother, reliable historian</li>
+      </ul>
+      <p><b>Chief complaint:</b> High fever for more than 4 days, feeding poorly, and a new rash over the body.</p>
+    </details>
+
+    <details open>
+      <summary>Current medical history</summary>
+      <p>Well until ~5 days ago, when fever began; now persistently 102.5–104.1 °F (39.2–40.1 °C) at home, continuous, poorly responsive to alternating acetaminophen and ibuprofen.</p>
+      <p>For 2 days: blotchy pink-to-red rash starting on the trunk and spreading to arms, legs and diaper area — flat to slightly raised, non-blistering. No new soaps, foods or medications. Eyes "pink and glassy" for 2 days without discharge or crusting. Lips unusually red and slightly cracked.</p>
+      <p>Very fussy, hard to console, high-pitched crying, fragmented sleep. Taking about half her usual feeds; 3–4 wet diapers in 24 h. No cough, congestion, vomiting or diarrhea. Hands and feet "puffy and warm" today.</p>
+      <p>Seen at urgent care on fever day 3: rapid strep negative, urinalysis reportedly negative; sent home with antipyretic advice. Fever persisted.</p>
+    </details>
+
+    <details>
+      <summary>Review of systems</summary>
+      <ul>
+        <li><b>Constitutional:</b> fever, fussiness, decreased activity, poor feeding</li>
+        <li><b>Eyes:</b> bilateral redness ×2 days, no discharge</li>
+        <li><b>Mouth:</b> red, slightly cracked lips; mother unsure about tongue</li>
+        <li><b>Skin:</b> diffuse blotchy rash ×2 days; no blistering or peeling yet</li>
+        <li><b>Cardiorespiratory:</b> no cough, wheeze or breathing difficulty</li>
+        <li><b>GI:</b> no vomiting/diarrhea; intake down ~50%</li>
+        <li><b>GU:</b> fewer wet diapers; no odor or blood</li>
+        <li><b>Extremities:</b> hands and feet puffy and warm today</li>
+        <li><b>Neuro:</b> no seizures; irritable, high-pitched cry</li>
+        <li><b>Lymphatic:</b> mother has not checked for neck swelling</li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>1. OB/GYN history</summary>
+      <p>Not applicable — infant. Maternal pregnancy summarized under Family History.</p>
+    </details>
+    <details>
+      <summary>2. Preventive healthcare</summary>
+      <ul>
+        <li>Well-child visits at 2 weeks, 2 and 4 months; growth 40th–55th percentiles</li>
+        <li>No prior hospitalizations or ED visits</li>
+        <li>Newborn hearing and metabolic screens normal (per mother)</li>
+      </ul>
+    </details>
+    <details>
+      <summary>3. Immunization</summary>
+      <ul>
+        <li>Birth: Hepatitis B #1</li>
+        <li>2 months: DTaP, IPV, Hib, PCV13, RV #1, Hep B #2</li>
+        <li>4 months: DTaP, IPV, Hib, PCV13, RV #2</li>
+        <li>No vaccines in the past 2 weeks; 6-month vaccines not yet due</li>
+      </ul>
+    </details>
+    <details>
+      <summary>4. Family history</summary>
+      <ul>
+        <li>Mother 29, healthy; father 32, healthy with seasonal allergies</li>
+        <li>Maternal grandmother: hypertension; paternal grandfather: type 2 diabetes</li>
+        <li>No rheumatologic/autoimmune disease, childhood vasculitis or unexplained prolonged fevers; no consanguinity</li>
+        <li>Pregnancy: term (39 wk), uncomplicated vaginal delivery, no NICU</li>
+      </ul>
+    </details>
+    <details>
+      <summary>5. Current medical history (summary)</summary>
+      <p>Five days of high, persistent fever poorly responsive to antipyretics; diffuse rash ×2 days; bilateral non-purulent conjunctival injection; red, cracked lips; puffy, warm hands and feet; marked irritability; reduced intake and urine output. No prior similar episodes.</p>
+    </details>
+    <details>
+      <summary>6. Allergies</summary>
+      <p>No known drug, food or environmental allergies.</p>
+    </details>
+    <details>
+      <summary>7. Exposure history</summary>
+      <ul>
+        <li>Small in-home daycare (3–4 children) two days/week</li>
+        <li>No known sick contacts in past 2 weeks; no travel outside the metro area</li>
+        <li>No pets; no standing water, ticks or insect bites</li>
+        <li>Smoke-free home; municipal water</li>
+      </ul>
+    </details>
+    <details>
+      <summary>8. Behavior</summary>
+      <ul>
+        <li>Normally smiley, socially engaged; sleeps 10–11 h overnight</li>
+        <li>Past 2 days: fussy, hard to console, high-pitched crying, disrupted sleep, less interaction</li>
+      </ul>
+    </details>
+    <details>
+      <summary>9. Family social history</summary>
+      <ul>
+        <li>Lives with both parents and a healthy 3-year-old sibling</li>
+        <li>Mother part-time, father full-time; no tobacco, alcohol or substances</li>
+        <li>Stable housing, food-secure, insured, established primary care</li>
+      </ul>
+    </details>
+    <details>
+      <summary>10. Habits</summary>
+      <ul>
+        <li>Breast milk + formula, baseline ~24–28 oz/day, now about half</li>
+        <li>Solids not started; pacifier at sleep; no screen time</li>
+      </ul>
+    </details>
+    <details>
+      <summary>11. Past medical history</summary>
+      <ul>
+        <li>Term, 39 wk, birth weight 7 lb 4 oz; no NICU or phototherapy</li>
+        <li>No hospitalizations, surgeries or chronic conditions</li>
+        <li>Development normal (rolls both ways, good head control, reaches, babbles)</li>
+      </ul>
+    </details>
+    <details>
+      <summary>12. Previous important tests</summary>
+      <ul>
+        <li>4-month visit: normal growth and exam</li>
+        <li>Urgent care (fever day 3): rapid strep negative; urinalysis "no infection" (no microscopy details given)</li>
+        <li>No prior bloodwork, imaging or echocardiography</li>
+      </ul>
+    </details>
+
+    <details open>
+      <summary>Physical examination today</summary>
+      <div class="vitals">
+        <div>Temp<b>39.8 °C</b>103.6 °F rectal</div>
+        <div>Heart rate<b>168</b>bpm</div>
+        <div>Resp. rate<b>36</b>/min</div>
+        <div>Blood pressure<b>88/54</b>mmHg</div>
+        <div>SpO₂<b>98%</b>room air</div>
+        <div>Weight<b>6.9 kg</b>~45th pct</div>
+      </div>
+      <ul>
+        <li><b>General:</b> irritable, intermittently hard to console; mildly ill, not toxic</li>
+        <li><b>Eyes:</b> bilateral bulbar conjunctival injection, non-exudative, sparing the limbus</li>
+        <li><b>Mouth:</b> lips erythematous, dry, slightly cracked; oropharynx mildly erythematous</li>
+        <li><b>Neck:</b> single ~1 cm mobile, mildly tender right node; no significant cervical lymphadenopathy</li>
+        <li><b>Skin:</b> diffuse blanching maculopapular rash on trunk, extremities and perineum; no vesicles, petechiae or purpura</li>
+        <li><b>Extremities:</b> mild dorsal hand and foot edema, warm; no periungual peeling; no joint swelling</li>
+        <li><b>CV:</b> tachycardic, regular, no murmur on brief exam</li>
+        <li><b>Resp:</b> clear, no distress</li>
+        <li><b>Abdomen:</b> soft, non-tender, no organomegaly</li>
+        <li><b>Neuro:</b> alert, irritable but intermittently consolable; moves all limbs; fontanelle soft and flat</li>
+      </ul>
+    </details>
+  </aside>
+
+  <!-- ======================= CHAT ======================= -->
+  <section class="chat">
+    <div id="log" aria-live="polite"></div>
+    <form id="composer">
+      <textarea id="input" rows="1" placeholder="Answer Dr. Bernd… (Enter to send, Shift+Enter for a new line)" disabled></textarea>
+      <button class="btn primary" id="sendBtn" type="submit" disabled>Send</button>
+    </form>
+    <div class="hint">Type <b>stop</b> to end the quiz and get your review.</div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const log = $("log"), input = $("input"), sendBtn = $("sendBtn"), stopBtn = $("stopBtn");
+
+  let accessCode = "", studentName = "";
+  let history = [];       // [{role:'assistant'|'user', content}] — starts with Dr. Bernd's greeting
+  let busy = false, ended = false;
+
+  /* ---------- tiny, safe markdown renderer ---------- */
+  function esc(s) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function inline(s) {
+    return esc(s)
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/(^|[^*])\*(?!\s)(.+?)\*(?!\*)/g, "$1<em>$2</em>");
+  }
+  function md(text) {
+    const lines = text.replace(/\r/g, "").split("\n");
+    let html = "", para = [], stack = []; // stack of open list indents
+    const flushPara = () => { if (para.length) { html += "<p>" + para.map(inline).join("<br>") + "</p>"; para = []; } };
+    const closeLists = (to = -1) => { while (stack.length && stack[stack.length - 1] > to) { html += "</li></ul>"; stack.pop(); } };
+    for (const raw of lines) {
+      const m = raw.match(/^(\s*)[-*•]\s+(.*)$/);
+      const h = raw.match(/^(#{1,4})\s+(.*)$/);
+      if (m) {
+        flushPara();
+        const indent = m[1].replace(/\t/g, "  ").length;
+        if (!stack.length || indent > stack[stack.length - 1]) { html += "<ul><li>"; stack.push(indent); }
+        else { closeLists(indent); if (stack.length && stack[stack.length - 1] === indent) html += "</li><li>"; else { html += "<ul><li>"; stack.push(indent); } }
+        html += inline(m[2]);
+      } else if (h) {
+        flushPara(); closeLists();
+        const lvl = h[1].length <= 2 ? 2 : 3;
+        html += `<h${lvl}>${inline(h[2])}</h${lvl}>`;
+      } else if (!raw.trim()) {
+        flushPara(); closeLists();
+      } else {
+        if (stack.length) { html += "<br>" + inline(raw.trim()); }
+        else para.push(raw);
+      }
+    }
+    flushPara(); closeLists();
+    return html;
+  }
+
+  /* ---------- UI helpers ---------- */
+  function addMsg(role, text, opts = {}) {
+    const wrap = document.createElement("div");
+    wrap.className = "msg " + (role === "user" ? "student" : "bernd") + (opts.review ? " review" : "");
+    const who = document.createElement("div");
+    who.className = "who";
+    who.innerHTML = `<div class="seal" title="${role === "user" ? "You" : "Dr. Bernd"}">${role === "user" ? esc((studentName || "You")[0].toUpperCase()) : "B"}</div>`;
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    if (role === "user") bubble.textContent = text; else bubble.innerHTML = md(text);
+    wrap.append(who, bubble);
+    log.append(wrap);
+    log.scrollTop = log.scrollHeight;
+    return wrap;
+  }
+  function addTyping(label) {
+    const el = addMsg("assistant", "");
+    el.querySelector(".bubble").innerHTML = `<span class="typing">${label}</span>`;
+    return el;
+  }
+  function addError(text) {
+    const el = document.createElement("div");
+    el.className = "error"; el.textContent = text;
+    log.append(el); log.scrollTop = log.scrollHeight;
+  }
+  function setBusy(b) {
+    busy = b;
+    input.disabled = b || ended;
+    sendBtn.disabled = b || ended;
+    stopBtn.disabled = b || ended || history.length === 0;
+    if (!b && !ended) input.focus();
+  }
+
+  async function callWorker(payload) {
+    const res = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accessCode, studentName, ...payload }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Request failed (HTTP ${res.status})`);
+    return data;
+  }
+
+  /* ---------- sign-in ---------- */
+  $("gateForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = $("gateBtn");
+    $("gateError").textContent = "";
+    if (WORKER_URL.includes("YOUR-SUBDOMAIN")) {
+      $("gateError").textContent = "Set WORKER_URL at the top of index.html first.";
+      return;
+    }
+    accessCode = $("codeInput").value.trim();
+    studentName = $("nameInput").value.trim();
+    btn.disabled = true; btn.textContent = "Checking…";
+    try {
+      await callWorker({ checkOnly: true, messages: [] });
+      $("gate").remove();
+      start();
+    } catch (err) {
+      $("gateError").textContent = err.message === "Failed to fetch"
+        ? "Couldn't reach the server. Check WORKER_URL and ALLOWED_ORIGINS."
+        : err.message;
+      btn.disabled = false; btn.textContent = "Begin rounds";
+    }
+  });
+
+  /* ---------- quiz flow ---------- */
+  async function start() {
+    setBusy(true);
+    const t = addTyping("Dr. Bernd is reviewing the chart…");
+    try {
+      const data = await callWorker({ messages: [], mode: "quiz" });
+      t.remove();
+      history.push({ role: "assistant", content: data.reply });
+      addMsg("assistant", data.reply);
+    } catch (err) {
+      t.remove();
+      addError("Couldn't start the session: " + err.message);
+      const retry = document.createElement("button");
+      retry.className = "btn"; retry.textContent = "Try again";
+      retry.onclick = () => { retry.remove(); log.lastChild?.remove(); start(); };
+      log.append(retry);
+    }
+    setBusy(false);
+  }
+
+  const isStop = (s) => /^\s*stop[\s.!]*$/i.test(s);
+
+  async function send(text) {
+    if (busy || ended || !text.trim() || history.length === 0) return;
+    const review = isStop(text);
+    history.push({ role: "user", content: text });
+    addMsg("user", text);
+    input.value = ""; autosize();
+    setBusy(true);
+    const t = addTyping(review ? "Dr. Bernd is writing up your review…" : "Dr. Bernd is thinking…");
+    try {
+      const data = await callWorker({ messages: history, mode: review ? "review" : "quiz" });
+      t.remove();
+      history.push({ role: "assistant", content: data.reply });
+      addMsg("assistant", data.reply, { review });
+      if (review || data.ended) endSession();
+    } catch (err) {
+      t.remove();
+      history.pop();                       // let the student resend
+      addError("Message not delivered: " + err.message);
+      input.value = text; autosize();
+    }
+    setBusy(false);
+  }
+
+  function endSession() {
+    ended = true;
+    const bar = document.createElement("div");
+    bar.style.cssText = "display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 24px";
+    const again = document.createElement("button");
+    again.className = "btn primary"; again.textContent = "Start a new session";
+    again.onclick = () => location.reload();
+    const save = document.createElement("button");
+    save.className = "btn"; save.textContent = "Download transcript";
+    save.onclick = downloadTranscript;
+    bar.append(again, save);
+    log.append(bar); log.scrollTop = log.scrollHeight;
+    $("composer").style.display = "none";
+    document.querySelector(".hint").textContent = "Session ended.";
+  }
+
+  function downloadTranscript() {
+    const who = studentName || "Student";
+    const lines = [`Case Rounds with Dr. Bernd — transcript`, `Student: ${who}`, `Date: ${new Date().toLocaleString()}`, ""];
+    for (const m of history) lines.push(`${m.role === "user" ? who : "Dr. Bernd"}:\n${m.content}\n`);
+    const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `dr-bernd-review-${who.replace(/\W+/g, "_")}.txt`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  /* ---------- composer ---------- */
+  function autosize() { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 180) + "px"; }
+  input.addEventListener("input", autosize);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input.value); }
+  });
+  $("composer").addEventListener("submit", (e) => { e.preventDefault(); send(input.value); });
+  stopBtn.addEventListener("click", () => {
+    if (confirm("End the quiz now and get your review?")) send("stop");
+  });
+  $("caseToggle").addEventListener("click", () => {
+    $("caseFile").classList.toggle("open");
+    $("main").classList.toggle("case-open");
+  });
+})();
+</script>
+</body>
+</html>
