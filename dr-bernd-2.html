@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doctor Bernd Rounds</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f6f4ef; --surface:#ffffff; --surface-2:#efece5; --ink:#1d2327; --muted:#5d666d;
+    --line:#dcd7cc; --accent:#1f5f5b; --accent-ink:#ffffff; --accent-soft:#dcebe8;
+    --student:#24384f; --student-ink:#ffffff; --danger:#a5352b; --danger-soft:#f6e1de;
+    --hold:#8a5a00; --hold-soft:#fbefd5; --shadow:0 1px 2px rgba(0,0,0,.05),0 6px 24px rgba(0,0,0,.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#14181b; --surface:#1c2226; --surface-2:#232a2f; --ink:#e7eaec; --muted:#9aa4ab;
+      --line:#323b41; --accent:#6fb5ad; --accent-ink:#0f1b1a; --accent-soft:#203633;
+      --student:#3b5b80; --student-ink:#ffffff; --danger:#e07a6f; --danger-soft:#3a2321;
+      --hold:#f0c063; --hold-soft:#35290f; --shadow:none;
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif}
+  .wrap{max-width:820px;margin:0 auto;padding:20px 16px 0;min-height:100dvh;display:flex;flex-direction:column}
+  header{display:flex;align-items:center;gap:14px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+  .avatar{width:48px;height:48px;border-radius:50%;background:var(--accent);color:var(--accent-ink);
+    display:grid;place-items:center;font:600 18px "Source Serif 4",serif;flex:none}
+  h1{font:600 22px/1.2 "Source Serif 4",serif;margin:0}
+  .sub{color:var(--muted);font-size:14px;margin:2px 0 0}
+  .clock{margin-left:auto;font:500 13px Inter,sans-serif;color:var(--muted);text-align:right}
+
+  /* Setup */
+  .setup{margin:28px 0;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:var(--shadow)}
+  .setup h2{font:600 19px "Source Serif 4",serif;margin:0 0 6px}
+  .setup p{margin:0 0 16px;color:var(--muted);font-size:15px}
+  .setup ul{margin:0 0 18px;padding-left:20px;color:var(--muted);font-size:14.5px}
+  label{display:block;font:500 13px Inter,sans-serif;margin:0 0 6px}
+  input[type=text],input[type=password]{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;
+    background:var(--bg);color:var(--ink);font:15px Inter,sans-serif}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+  @media (max-width:560px){.row{grid-template-columns:1fr}}
+  .resume-box{border:1px solid var(--hold);background:var(--hold-soft);color:var(--ink);border-radius:10px;padding:12px 14px;margin:0 0 16px;font-size:14.5px}
+  .btn{border:0;border-radius:10px;padding:11px 18px;font:600 15px Inter,sans-serif;cursor:pointer;
+    background:var(--accent);color:var(--accent-ink)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  .btn.danger{background:var(--danger-soft);color:var(--danger);border:1px solid transparent}
+  .btn.hold{background:var(--hold-soft);color:var(--hold);border:1px solid var(--hold)}
+  .btn.go{background:var(--accent);color:var(--accent-ink)}
+  .err{color:var(--danger);font-size:14px;margin-top:10px;min-height:1em}
+
+  /* Chat */
+  #chat{flex:1;padding:20px 0 12px;display:flex;flex-direction:column;gap:14px;transition:opacity .2s}
+  #chat.dim{opacity:.35;pointer-events:none;user-select:none}
+  .msg{max-width:88%;padding:12px 15px;border-radius:14px;white-space:pre-wrap;word-wrap:break-word}
+  .msg.bernd{background:var(--surface);border:1px solid var(--line);align-self:flex-start;border-top-left-radius:4px;box-shadow:var(--shadow)}
+  .msg.student{background:var(--student);color:var(--student-ink);align-self:flex-end;border-top-right-radius:4px}
+  .msg .who{font:600 12px Inter,sans-serif;letter-spacing:.02em;color:var(--muted);margin-bottom:3px}
+  .msg.student .who{color:rgba(255,255,255,.75)}
+  .msg.review{max-width:100%;white-space:normal;border-color:var(--accent)}
+  .msg.review h2{font:600 18px "Source Serif 4",serif;margin:18px 0 6px}
+  .msg.review h2:first-of-type{margin-top:4px}
+  .msg.review ul{margin:4px 0 10px;padding-left:20px}
+  .msg.review li{margin:3px 0}
+  .msg.review p{margin:8px 0 4px}
+  .msg.review a{color:var(--accent)}
+  .typing{color:var(--muted);font-style:italic;font-size:14px}
+  .note{align-self:center;color:var(--muted);font-size:13px;text-align:center}
+
+  /* Hold banner */
+  .holdbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:1px solid var(--hold);background:var(--hold-soft);
+    color:var(--ink);border-radius:12px;padding:12px 14px;margin:0 0 10px}
+  .holdbar strong{color:var(--hold)}
+  .holdbar .spacer{flex:1}
+
+  /* Composer */
+  .composer{position:sticky;bottom:0;background:var(--bg);padding:10px 0 16px;border-top:1px solid var(--line)}
+  .bar{display:flex;gap:8px;align-items:flex-end}
+  textarea{flex:1;min-height:52px;max-height:180px;resize:none;padding:13px 14px;border:1px solid var(--line);border-radius:12px;
+    background:var(--surface);color:var(--ink);font:15px/1.4 Inter,sans-serif}
+  textarea:disabled{opacity:.6}
+  .actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+  .actions .btn{padding:8px 14px;font-size:14px}
+  .hidden{display:none !important}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="avatar" aria-hidden="true">B</div>
+    <div>
+      <h1>Doctor Bernd</h1>
+      <p class="sub">Pediatric oral examination · virtual patient</p>
+    </div>
+    <div class="clock hidden" id="clock"></div>
+  </header>
+
+  <!-- Setup -->
+  <section class="setup" id="setup">
+    <h2>Before we begin</h2>
+    <p>Doctor Bernd will present a pediatric patient and question you on the differential diagnosis, the tests you would recommend and the treatment. His questions adapt to your answers.</p>
+    <ul>
+      <li>Ask for the history, examination and test results you need. Nothing is handed to you.</li>
+      <li>Press <strong>Hold</strong> to pause the conversation at any time, and <strong>Continuation</strong> to pick up where you left off. A held session is kept in this browser, even if you close the page.</li>
+      <li>Type <strong>stop</strong> (on its own) or press <strong>Stop and review</strong> to end. You will get a question-by-question review, your evaluation and recommended reading.</li>
+    </ul>
+    <div class="resume-box hidden" id="resumeBox"></div>
+    <div class="row">
+      <div>
+        <label for="name">Your name (optional, for the report)</label>
+        <input type="text" id="name" autocomplete="name" placeholder="for example, Alex Kim">
+      </div>
+      <div>
+        <label for="code">Access code</label>
+        <input type="password" id="code" autocomplete="off" placeholder="From your instructor">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn hidden" id="resumeBtn">Continue my held session</button>
+      <button class="btn" id="startBtn">Start the case</button>
+    </div>
+    <div class="err" id="setupErr" role="alert"></div>
+  </section>
+
+  <main id="chat" class="hidden" aria-live="polite"></main>
+
+  <div class="composer hidden" id="composer">
+    <div class="holdbar hidden" id="holdbar" role="status">
+      <span><strong>Conversation on hold.</strong> <span id="holdText">Paused.</span></span>
+      <span class="spacer"></span>
+    </div>
+    <div class="bar">
+      <textarea id="input" placeholder="Answer Doctor Bernd… (type “stop” to end)" rows="1"></textarea>
+      <button class="btn" id="sendBtn">Send</button>
+    </div>
+    <div class="actions">
+      <button class="btn hold" id="holdBtn" title="Pause the conversation">⏸ Hold</button>
+      <button class="btn go" id="contBtn" title="Continue the conversation" disabled>▶ Continuation</button>
+      <button class="btn danger" id="stopBtn">Stop and review</button>
+      <button class="btn ghost hidden" id="dlBtn">Download review</button>
+      <button class="btn ghost hidden" id="newBtn">New session</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================== CONFIG ===================== */
+const WORKER_URL = "https://YOUR-WORKER-NAME.YOUR-SUBDOMAIN.workers.dev"; // <-- your existing Worker address
+const APP = "dr-bernd-2";        // tells the Worker which hidden case prompt to use
+const TIER = "balanced";         // fast | balanced | thorough
+/* ================================================== */
+
+const $ = (id) => document.getElementById(id);
+const SAVE_KEY = "bernd2-session";
+const store = {
+  get(){ try { return JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); } catch { return null; } },
+  set(v){ try { localStorage.setItem(SAVE_KEY, JSON.stringify(v)); } catch {} },
+  clear(){ try { localStorage.removeItem(SAVE_KEY); } catch {} }
+};
+
+/* ---------- Session state ---------- */
+let S = freshState();
+function freshState(){
+  return { api:[], shown:[], name:"", started:Date.now(), ended:false,
+           held:false, holdStart:0, holds:[], pending:null, savedAt:0 };
+}
+let accessCode = "", busy = false, tick = null;
+function save(){ S.savedAt = Date.now(); store.set(S); }
+
+/* ---------- No-abbreviation safety net ----------
+   Doctor Bernd is instructed never to abbreviate. This filter expands anything that slips through. */
+const ABBR = {
+  "NT-proBNP":"N-terminal pro-B-type natriuretic peptide","SARS-CoV-2":"severe acute respiratory syndrome coronavirus 2",
+  "MIS-C":"Multisystem Inflammatory Syndrome in Children","COVID-19":"coronavirus disease 2019","IVIG":"intravenous immunoglobulin",
+  "CRP":"C-reactive protein","ESR":"erythrocyte sedimentation rate","CBC":"complete blood count","CMP":"comprehensive metabolic panel",
+  "BMP":"basic metabolic panel","WBC":"white blood cell count","WBCs":"white blood cells","RBC":"red blood cell count","Hgb":"hemoglobin","Hb":"hemoglobin",
+  "ALT":"alanine aminotransferase","AST":"aspartate aminotransferase","GGT":"gamma-glutamyl transferase","LDH":"lactate dehydrogenase",
+  "BNP":"B-type natriuretic peptide","BUN":"blood urea nitrogen","CSF":"cerebrospinal fluid","LP":"lumbar puncture","UA":"urinalysis",
+  "UTI":"urinary tract infection","PCR":"polymerase chain reaction","ECG":"electrocardiogram","EKG":"electrocardiogram","CXR":"chest radiograph",
+  "GAS":"group A streptococcus","ASO":"antistreptolysin O","TSS":"toxic shock syndrome","SSSS":"staphylococcal scalded skin syndrome",
+  "SJS":"Stevens-Johnson syndrome","sJIA":"systemic juvenile idiopathic arthritis","JIA":"juvenile idiopathic arthritis","KD":"Kawasaki disease",
+  "IV":"intravenous","ICU":"intensive care unit","PICU":"pediatric intensive care unit","NICU":"neonatal intensive care unit",
+  "ED":"emergency department","ER":"emergency room","NKDA":"no known drug allergies","HPI":"history of present illness","PMH":"past medical history",
+  "ROS":"review of systems","HR":"heart rate","RR":"respiratory rate","BP":"blood pressure","SpO2":"oxygen saturation","LAD":"left anterior descending artery",
+  "RCA":"right coronary artery","AHA":"American Heart Association","AAP":"American Academy of Pediatrics","CDC":"Centers for Disease Control and Prevention",
+  "MMR":"measles, mumps and rubella vaccine","DTaP":"diphtheria, tetanus and acellular pertussis vaccine","IPV":"inactivated poliovirus vaccine",
+  "Hib":"Haemophilus influenzae type b vaccine","PCV13":"13-valent pneumococcal conjugate vaccine","HepB":"hepatitis B vaccine",
+  "IgM":"immunoglobulin M","IgG":"immunoglobulin G","NSAID":"nonsteroidal anti-inflammatory drug","NSAIDs":"nonsteroidal anti-inflammatory drugs",
+  "ASA":"aspirin","GBS":"group B streptococcus","HSV":"herpes simplex virus","EBV":"Epstein-Barr virus","CMV":"cytomegalovirus"
+};
+const PHRASES = [ // [pattern, replacement] — applied before the word list
+  [/\bDr\.\s?/g,"Doctor "],[/\be\.g\.,?/gi,"for example,"],[/\bi\.e\.,?/gi,"that is,"],[/\bvs\.?(?=\s)/gi,"versus"],
+  [/\bet al\./g,"and colleagues."],[/\bet al\b/g,"and colleagues"],[/\b(\d+)(st|nd|rd|th) ed\./g,"$1$2 edition"],[/\bapprox\.\s?/gi,"approximately "],
+  [/(\d)\s?mg\/kg\/day\b/g,"$1 milligrams per kilogram per day"],[/(\d)\s?mg\/kg\b/g,"$1 milligrams per kilogram"],
+  [/(\d)\s?g\/kg\b/g,"$1 grams per kilogram"],[/(\d)\s?mg\/dL\b/g,"$1 milligrams per deciliter"],[/(\d)\s?g\/dL\b/g,"$1 grams per deciliter"],
+  [/(\d)\s?mg\/L\b/g,"$1 milligrams per liter"],[/(\d)\s?ng\/mL\b/g,"$1 nanograms per milliliter"],[/(\d)\s?pg\/mL\b/g,"$1 picograms per milliliter"],
+  [/(\d)\s?U\/L\b/g,"$1 units per liter"],[/(\d)\s?mm\/h(r)?\b/g,"$1 millimeters per hour"],[/(\d)\s?mmHg\b/g,"$1 millimeters of mercury"],
+  [/(\d)\s?bpm\b/g,"$1 beats per minute"],[/(\d)\s?mmol\/L\b/g,"$1 millimoles per liter"],[/(\d)\s?\/µL\b/g,"$1 per microliter"],
+  [/(\d)\s?°C\b/g,"$1 degrees Celsius"],[/(\d)\s?°F\b/g,"$1 degrees Fahrenheit"],[/(\d)\s?kg\b/g,"$1 kilograms"],
+  [/(\d)\s?cm\b/g,"$1 centimeters"],[/(\d)\s?hrs?\b/g,"$1 hours"],[/(\d)\s?mins?\b/g,"$1 minutes"],[/(\d)\s?mL\b/g,"$1 milliliters"],
+  [/(\d)\s?oz\b/g,"$1 ounces"],[/(\d)\s?lbs?\b/g,"$1 pounds"]
+];
+const ABBR_KEYS = Object.keys(ABBR).sort((a,b) => b.length - a.length).map(k => k.replace(/[-]/g,"\\-"));
+const ABBR_WORD = new RegExp("(?<![\\w-])(" + ABBR_KEYS.join("|") + ")(?![\\w-])", "g");
+const ABBR_PAREN = new RegExp("\\s*\\((" + ABBR_KEYS.join("|") + ")\\)", "g");
+function expandAbbrev(text){
+  // leave links untouched
+  return text.split(/(https?:\/\/\S+)/g).map((part, i) => {
+    if (i % 2) return part;
+    // "C-reactive protein (CRP)" -> "C-reactive protein"; a lone "(CRP)" -> "(C-reactive protein)"
+    let t = part.replace(ABBR_PAREN, (m, k, off, str) =>
+      str.slice(0, off).toLowerCase().endsWith(ABBR[k].toLowerCase()) ? "" : ` (${ABBR[k]})`);
+    for (const [re, rep] of PHRASES) t = t.replace(re, rep);
+    return t.replace(ABBR_WORD, (m) => ABBR[m]);
+  }).join("");
+}
+
+/* ---------- UI helpers ---------- */
+function esc(s){ return s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function md(t){ // tiny markdown: ## headings, - bullets, **bold**, links
+  const lines = esc(t).split("\n"); let html = "", inList = false;
+  const inline = s => s.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>")
+                      .replace(/(https?:\/\/[^\s<)]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
+  for (const l of lines){
+    if (/^\s*[-•]\s+/.test(l)){ if(!inList){html+="<ul>";inList=true;} html += "<li>"+inline(l.replace(/^\s*[-•]\s+/,""))+"</li>"; continue; }
+    if (inList){ html+="</ul>"; inList=false; }
+    if (/^#{1,3}\s+/.test(l)) html += "<h2>"+inline(l.replace(/^#+\s+/,""))+"</h2>";
+    else if (l.trim()) html += "<p>"+inline(l)+"</p>";
+  }
+  if (inList) html += "</ul>";
+  return html;
+}
+function render(m){
+  const chat = $("chat");
+  if (m.kind === "note"){
+    const n = document.createElement("div"); n.className = "note"; n.textContent = m.text;
+    if (m.error) n.style.color = "var(--danger)";
+    chat.appendChild(n); n.scrollIntoView({block:"end"}); return;
+  }
+  const d = document.createElement("div");
+  d.className = "msg " + (m.who === "Doctor Bernd" ? "bernd" : "student") + (m.review ? " review" : "");
+  d.innerHTML = `<div class="who">${esc(m.who)}</div>` + (m.review ? md(m.text) : esc(m.text));
+  chat.appendChild(d);
+  d.scrollIntoView({behavior:"smooth", block:"end"});
+}
+function show(m){ S.shown.push(m); render(m); save(); }
+function note(text, error){ const m = {kind:"note", text, error:!!error}; if (error) render(m); else show(m); }
+function typing(on){
+  let t = $("typing");
+  if (on && !t){ t = document.createElement("div"); t.id="typing"; t.className="typing"; t.textContent="Doctor Bernd is thinking…"; $("chat").appendChild(t); t.scrollIntoView({block:"end"}); }
+  if (!on && t) t.remove();
+}
+function mmss(ms){
+  const s = Math.max(0, Math.round(ms/1000)), m = Math.floor(s/60), r = s % 60;
+  const unit = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+  return m ? unit(m, "minute") + (r ? " " + unit(r, "second") : "") : unit(r, "second");
+}
+function refresh(){
+  const held = S.held, ended = S.ended;
+  $("input").disabled = busy || held || ended;
+  $("sendBtn").disabled = busy || held || ended;
+  $("holdBtn").disabled = held || ended;
+  $("contBtn").disabled = !held || ended;
+  $("stopBtn").disabled = busy || held || ended;
+  $("holdbar").classList.toggle("hidden", !held);
+  $("chat").classList.toggle("dim", held);
+  $("input").placeholder = held ? "On hold. Press Continuation to resume." : "Answer Doctor Bernd… (type “stop” to end)";
+}
+function updateClock(){
+  const totalHeld = S.holds.reduce((a,h) => a + (h.end - h.start), 0) + (S.held ? Date.now() - S.holdStart : 0);
+  $("clock").textContent = S.ended ? "Session ended" : (S.held ? "On hold" : "In session");
+  if (S.held) $("holdText").textContent = `Paused for ${mmss(Date.now() - S.holdStart)}. Press Continuation when you are ready.`;
+  return totalHeld;
+}
+
+/* ---------- API ---------- */
+async function callWorker(maxTokens){
+  const res = await fetch(WORKER_URL, {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ accessCode, app: APP, tier: TIER, max_tokens: maxTokens, messages: S.api })
+  });
+  let data = {};
+  try { data = await res.json(); } catch {}
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  return (data.content || []).filter(b => b.type === "text").map(b => b.text).join("\n").trim();
+}
+
+async function turn(userContent, maxTokens, isReview){
+  S.api.push({ role:"user", content:userContent }); save();
+  busy = true; refresh(); typing(true);
+  try {
+    const text = expandAbbrev(await callWorker(maxTokens));
+    typing(false);
+    S.api.push({ role:"assistant", content:text });
+    const m = { who:"Doctor Bernd", text, review:isReview };
+    if (S.held && !isReview){ S.pending = m; save(); }   // keep the new question hidden until Continuation
+    else show(m);
+  } catch (err){
+    typing(false); S.api.pop(); save();
+    note("⚠ " + err.message + " Please try again.", true);
+    if (/access code/i.test(err.message)) setTimeout(() => location.reload(), 2500);
+    return false;
+  } finally { busy = false; refresh(); if (!S.held && !S.ended) $("input").focus(); }
+  return true;
+}
+
+/* ---------- Hold and Continuation ---------- */
+function hold(){
+  if (S.held || S.ended) return;
+  S.held = true; S.holdStart = Date.now(); save();
+  refresh(); updateClock();
+  $("contBtn").focus();
+}
+function lastQuestion(){
+  for (let i = S.shown.length - 1; i >= 0; i--){
+    const m = S.shown[i];
+    if (m.who === "Doctor Bernd"){
+      const qs = m.text.match(/[^.!?\n]*\?/g);
+      return qs ? qs[qs.length-1].trim() : null;
+    }
+    if (m.who && m.who !== "Doctor Bernd") return null; // student already answered the last question
+  }
+  return null;
+}
+function cont(){
+  if (!S.held || S.ended) return;
+  S.holds.push({ start:S.holdStart, end:Date.now() });
+  S.held = false; S.holdStart = 0;
+  note(`Conversation resumed after ${mmss(S.holds[S.holds.length-1].end - S.holds[S.holds.length-1].start)} on hold.`);
+  if (S.pending){ const p = S.pending; S.pending = null; show(p); }
+  else {
+    const q = lastQuestion();
+    if (q) show({ who:"Doctor Bernd", text:`Welcome back. Where we left off: ${q}` , local:true });
+  }
+  save(); refresh(); updateClock(); $("input").focus();
+}
+
+/* ---------- Flow ---------- */
+function checkSetup(){
+  accessCode = $("code").value.trim();
+  if (!accessCode){ $("setupErr").textContent = "Please enter the access code."; return false; }
+  if (WORKER_URL.includes("YOUR-WORKER")){ $("setupErr").textContent = "Setup needed: the instructor must set WORKER_URL in this page."; return false; }
+  return true;
+}
+function openChat(){
+  $("setup").classList.add("hidden"); $("chat").classList.remove("hidden");
+  $("composer").classList.remove("hidden"); $("clock").classList.remove("hidden");
+  clearInterval(tick); tick = setInterval(updateClock, 1000); updateClock(); refresh();
+}
+async function start(){
+  if (!checkSetup()) return;
+  S = freshState(); S.name = $("name").value.trim(); save();
+  openChat();
+  const who = S.name ? `The student's name is ${S.name}. ` : "";
+  await turn(`[SESSION_START] ${who}Please begin the oral examination.`, 700, false);
+}
+function resume(){
+  if (!checkSetup()) return;
+  const saved = store.get(); if (!saved) return start();
+  S = saved;
+  // an answer that was still on its way when the page closed never reached Doctor Bernd
+  const last = S.api[S.api.length-1];
+  let lost = false;
+  if (last && last.role === "user"){ S.api.pop(); lost = true; }
+  openChat();
+  $("chat").innerHTML = "";
+  S.shown.forEach(render);
+  if (lost) note("Your last message did not reach Doctor Bernd before the page closed. Please send it again after Continuation.");
+  if (S.ended) finishUi();
+  else if (!S.held) hold();       // a reopened session always comes back on hold
+  refresh(); updateClock();
+}
+
+function isStop(t){ return /^\s*(please\s+)?stop[\s.!]*$/i.test(t); }
+function isHold(t){ return /^\s*hold[\s.!]*$/i.test(t); }
+
+async function send(){
+  if (busy || S.held || S.ended) return;
+  const text = $("input").value.trim();
+  if (!text) return;
+  $("input").value = ""; autoGrow();
+  if (isHold(text)) return hold();
+  show({ who: S.name || "You", text });
+  if (isStop(text)) return endSession();
+  await turn(text, 700, false);
+}
+
+async function endSession(){
+  if (S.ended || busy || S.held) return;
+  $("stopBtn").disabled = true;
+  note("Preparing your review…");
+  const ok = await turn("[SESSION_END] The student typed stop. End the examination now and give the full written review as instructed, with no abbreviations.", 4000, true);
+  if (!ok) return;
+  S.ended = true; save(); finishUi();
+}
+function finishUi(){
+  clearInterval(tick); updateClock(); refresh();
+  $("stopBtn").classList.add("hidden"); $("holdBtn").classList.add("hidden"); $("contBtn").classList.add("hidden");
+  $("dlBtn").classList.remove("hidden"); $("newBtn").classList.remove("hidden");
+}
+
+function download(){
+  const totalHeld = S.holds.reduce((a,h) => a + (h.end - h.start), 0);
+  const head = `Doctor Bernd oral examination — ${S.name || "student"} — ${new Date(S.started).toLocaleString()}\n` +
+               `Times on hold: ${S.holds.length} (total ${mmss(totalHeld)})\n${"=".repeat(60)}\n\n`;
+  const body = S.shown.map(m => m.kind === "note" ? `[${m.text}]` : `${m.who}: ${m.text}`).join("\n\n");
+  const blob = new Blob([head + body], {type:"text/plain"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `doctor-bernd-review-${(S.name||"student").replace(/\W+/g,"-")}.txt`;
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function autoGrow(){ const t = $("input"); t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight,180) + "px"; }
+
+/* ---------- Offer to continue a held session ---------- */
+(function offerResume(){
+  const saved = store.get();
+  if (!saved || saved.ended || !saved.api || saved.api.length < 2) return;
+  const when = new Date(saved.savedAt || saved.started).toLocaleString();
+  $("resumeBox").innerHTML = `You have an unfinished session${saved.name ? " for <strong>" + esc(saved.name) + "</strong>" : ""}, last active ${esc(when)}. Enter the access code and press <strong>Continue my held session</strong>, or start a new case.`;
+  $("resumeBox").classList.remove("hidden"); $("resumeBtn").classList.remove("hidden");
+  $("name").value = saved.name || "";
+})();
+
+/* ---------- Wire up ---------- */
+$("startBtn").onclick = start;
+$("resumeBtn").onclick = resume;
+$("code").addEventListener("keydown", e => { if (e.key === "Enter") ($("resumeBtn").classList.contains("hidden") ? start() : resume()); });
+$("sendBtn").onclick = send;
+$("holdBtn").onclick = hold;
+$("contBtn").onclick = cont;
+$("stopBtn").onclick = () => { if (busy || S.held || S.ended) return; show({ who: S.name || "You", text:"stop" }); endSession(); };
+$("dlBtn").onclick = download;
+$("newBtn").onclick = () => { store.clear(); location.reload(); };
+$("input").addEventListener("input", autoGrow);
+$("input").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); send(); } });
+</script>
+</body>
+</html>
